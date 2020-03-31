@@ -1,0 +1,65 @@
+request:
+  query: |
+    query($id: String!) {
+      foo(id: $id) { 
+        ...namedFrag
+      }
+    }
+    fragment namedFrag on Foo2 {
+      id
+      newname
+    }
+  variables:
+    id: fooid
+
+response:
+  errors: []
+  data:
+    foo:
+      id: fooid
+      newname: Something
+
+schemaSources:
+  - namespace: foo
+    schema: |
+      schema {
+        query: Query
+      }
+      type Query {
+        foo(id: String) : Foo2
+      }
+      type Foo2 {
+        id: String
+        newname: String
+      }
+    typeAliases:
+      Foo: Foo2
+    mapper:
+      - type: Foo2
+        operations:
+        - key: newname
+          op: copy
+          target: name
+        - id: copy
+    expected:
+      query: |
+        query Bulk_Foo($id100: String!) {
+            foo100: foo(id: $id100) {
+                ...namedFrag
+            }
+        }
+        fragment namedFrag on Foo {
+          id
+          name
+        }
+      variables:
+        id100: fooid
+    response:
+      data:
+        foo100:
+          id: fooid
+          name: Something
+      errors: []
+
+
+

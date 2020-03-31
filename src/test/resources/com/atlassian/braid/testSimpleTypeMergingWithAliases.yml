@@ -1,0 +1,101 @@
+request:
+  query: |
+    query($id: String!) {
+      fooobject(id: $id) {
+        key
+        name
+        bar {
+          title
+        }
+      }
+    }
+  variables:
+    id: fooid1
+
+response:
+  errors: []
+  data:
+    fooobject:
+      key: fookey1
+      name: FooId1
+      bar:
+        title: BarTitle1
+
+schemaSources:
+  - namespace: fookey
+    schema: |
+      schema {
+          query: MyQuery
+      }
+      type MyQuery {
+          foo(id: String) : Foo
+      }
+      type Foo {
+          key: String
+      }
+    extensions:
+      - type: Foo
+        field: key
+        by:
+          namespace: foo
+          type: Foo
+          query: foo
+          arg: key
+    typeAliases:
+      Foo: FooConflict
+    queryFields:
+      foo: fooobject
+    expected:
+      query: |
+        query Bulk_Foo($id100: String!) {
+          fooobject100: foo(id: $id100) {
+            key
+          }
+        }
+      variables:
+        id100: fooid1
+    response:
+      data:
+        fooobject100:
+          key: fookey1
+      errors: []
+  - namespace: foo
+    schema: |
+      schema {
+          query: Query
+      }
+      type Query {
+          foo(key: String) : Foo
+      }
+      type Foo {
+        name: String
+        bar: Bar
+      }
+      type Bar {
+        title: String
+      }
+
+    # those 2 props are purely to avoid conflicts,
+    # ultimately a merge type should do this auto-magically...
+#    typeAliases:
+#      Foo: FooObject
+
+    expected:
+      query: |
+        query Bulk_FooConflict($key100: String) {
+          fooobject100: foo(key: $key100) {
+            bar {
+              title
+            }
+            name
+          }
+        }
+      variables:
+        key100: fookey1
+    response:
+      data:
+        fooobject100:
+          name: FooId1
+          bar:
+            title: BarTitle1
+      errors: []

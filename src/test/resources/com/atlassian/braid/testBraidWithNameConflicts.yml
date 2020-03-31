@@ -1,0 +1,119 @@
+request:
+  query: |
+    query($fooId: FooIDInput!, $barId: BarIDInput!) {
+      foo(id: $fooId) {
+        id
+        name
+      }
+      bar(id: $barId) {
+        id
+        title
+      }
+    }
+  variables:
+    fooId:
+      id: fooid
+    barId:
+      id: barid
+
+response:
+  errors: []
+  data:
+    foo:
+      id: fooid
+      name: VAL1
+    bar:
+      id: barid
+      title: VAL2
+
+schemaSources:
+  - namespace: foo
+    schema: |
+      schema {
+        query: Query
+      }
+      type Query {
+        foo(id: IDInput) : Conflict!
+      }
+      type Conflict implements Named {
+        id: MyID
+        name: String
+      }
+      scalar MyID
+      enum Title {
+              VAL1
+              VAL2
+            }
+      interface Named {
+        id: MyID
+      }
+      input IDInput {
+        id: String!
+      }
+    typeAliases:
+      Conflict: FooConflict
+      Title: FooTitle
+      Named: FooNamed
+      IDInput: FooIDInput
+    expected:
+      query: |
+        query Bulk_Conflict($fooId100: IDInput!) {
+          foo100: foo(id: $fooId100) {
+            id
+            name
+          }
+        }
+      variables:
+        fooId100:
+          id: fooid
+    response:
+      data:
+        foo100:
+          id: fooid
+          name: VAL1
+      errors: []
+  - namespace: bar
+    schema: |
+      schema {
+        query: Query
+      }
+      type Query {
+        bar(id: IDInput) : Conflict
+      }
+      type Conflict implements Named {
+        id: MyID
+        title: Title
+      }
+      scalar MyID
+      enum Title {
+        VAL1
+        VAL2
+      }
+      interface Named {
+        title: Title
+      }
+      input IDInput {
+        id: String!
+      }
+    typeAliases:
+      Conflict: BarConflict
+      Title: BarTitle
+      Named: BarNamed
+      IDInput: BarIDInput
+    expected:
+      query: |
+        query Bulk_Conflict($barId100: IDInput!) {
+          bar100: bar(id: $barId100) {
+            id
+            title
+          }
+        }
+      variables:
+        barId100:
+          id: barid
+    response:
+      data:
+        bar100:
+          id: barid
+          title: VAL2
+      errors: []

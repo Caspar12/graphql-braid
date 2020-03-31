@@ -1,0 +1,88 @@
+request:
+  query: |
+    query($fooId: String!, $bazId: String!) {
+      foo(id: $fooId) {
+        name
+      }
+      baz(id: $bazId) {
+        value
+      }
+    }
+  variables:
+    fooId: fooid
+    bazId: bazid
+
+response:
+  errors: []
+  data:
+    foo:
+      name: Foo
+    baz:
+      value: Baz
+
+schemaSources:
+- namespace: foo
+  schema: |
+    schema {
+        query: Query
+    }
+    type Query {
+        foo(id: String) : Foo
+    }
+    type Foo {
+        id: String
+        name: String
+    }
+  topLevelFields:
+    - foo
+  expected:
+    query: |
+      query Bulk_Foo($fooId100: String!) {
+          foo100: foo(id: $fooId100) {
+              name
+          }
+      }
+    variables:
+      fooId100: fooid
+  response:
+    data:
+      foo100:
+        id: fooid
+        name: Foo
+    errors: []
+- namespace: bar
+  schema: |
+    schema {
+        query: Query
+    }
+    type Query {
+        foo(id: String) : Bar
+        baz(id: String) : Baz
+    }
+    type Bar {
+        title: String
+    }
+    type Baz {
+        value: String
+    }
+  topLevelFields:
+    # conflict would occur if foo was exposed in public schema
+    # - foo
+    - baz
+  expected:
+    query: |
+      query Bulk_Baz($bazId100: String!) {
+          baz100: baz(id: $bazId100) {
+              value
+          }
+      }
+    variables:
+          bazId100: bazid
+  response:
+    data:
+      baz100:
+        value: Baz
+    errors: []
+
+
+

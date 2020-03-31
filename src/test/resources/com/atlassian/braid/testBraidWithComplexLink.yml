@@ -1,0 +1,104 @@
+request:
+  query: |
+    query($id: String!, $inParam: String!) {
+      foo(id: $id) {
+        id
+        name
+        barAlias: bar(inputParam: $inParam) {
+          titleAlias: title
+        }
+      }
+    }
+  variables:
+    id: fooid
+    inParam: baz1
+
+response:
+  errors: []
+  data:
+    foo:
+      id: fooid
+      name: Foo
+      barAlias:
+        titleAlias: Bar
+
+schemaSources:
+  - namespace: foo
+    schema: |
+      schema {
+          query: Query
+      }
+      type Query {
+          foo(id: String) : Foo
+      }
+      type Foo {
+          id: String
+          siteId: String
+          name: String
+      }
+    complexLinks:
+      - sourceType: Foo
+        field: bar
+        targetNamespace: bar
+        targetType: Bar
+        topLevelQueryField: topbar
+        arguments:
+          - sourceName: id
+            argumentSource: OBJECT_FIELD
+            queryArgumentName: id
+          - sourceName: siteId
+            argumentSource: OBJECT_FIELD
+            queryArgumentName: site
+          - sourceName: inputParam
+            argumentSource: FIELD_ARGUMENT
+            queryArgumentName: baz
+            nullable: false
+    expected:
+      query: |
+        query Bulk_Foo($id100: String!) {
+            foo100: foo(id: $id100) {
+                id
+                name
+                siteId
+            }
+        }
+      variables:
+        id100: fooid
+    response:
+      data:
+        foo100:
+          id: fooid
+          siteId: site1
+          name: Foo
+      errors: []
+  - namespace: bar
+    schema: |
+      schema {
+          query: Query
+      }
+      type Query {
+          topbar(id: String, site: String, baz: String) : Bar
+      
+      }
+      type Bar {
+          title: String
+      }
+    expected:
+      query: |
+        query Bulk_Bar($id100: String, $site100: String, $baz100: String) {
+            bar100: topbar(id: $id100, site: $site100, baz: $baz100) {
+                titleAlias: title
+            }
+        }
+      variables:
+        id100: fooid
+        site100: site1
+        baz100: baz1
+    response:
+      data:
+        bar100:
+          title: Bar
+      errors: []
+
+
+

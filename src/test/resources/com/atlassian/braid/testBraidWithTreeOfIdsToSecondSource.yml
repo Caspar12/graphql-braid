@@ -1,0 +1,156 @@
+request:
+  query: |
+    query($id: String!) {
+      foo(id: $id) {
+        id
+        name
+        icon {
+          path
+        }
+        children {
+          nodes {
+            id
+            name
+            icon {
+              path
+            }
+          }
+        }
+      }
+    }
+  variables:
+    id: fooid1
+
+response:
+  errors: []
+  data:
+    foo:
+      id: fooid1
+      name: FooId1
+      icon:
+        path: /fooid1
+      children:
+        nodes:
+          - id: fooid2
+            name: FooId2
+            icon:
+              path: /fooid2
+          - id: fooid3
+            name: FooId3
+            icon:
+              path: /fooid3
+
+schemaSources:
+  - namespace: fooid
+    schema: |
+      schema {
+          query: MyQuery
+      }
+      type MyQuery {
+          foo(id: String) : Foo
+      }
+      type Foo {
+          id: String
+          children: FooCollection
+      }
+
+      type FooCollection {
+          nodes: [Foo]
+      }
+    extensions:
+    - type: Foo
+      field: id
+      by:
+        namespace: foo
+        type: Foo
+        query: foo
+        arg: id
+    expected:
+      query: |
+        query Bulk_Foo($id100: String!) {
+          foo100: foo(id: $id100) {
+            id
+            children {
+              nodes {
+                id
+              }
+            }
+          }
+        }
+      variables:
+        id100: fooid1
+    response:
+      data:
+        foo100:
+          id: fooid1
+          children:
+            nodes:
+              - id: fooid2
+              - id: fooid3
+      errors: []
+  - namespace: foo
+    schema: |
+      schema {
+          query: Query
+      }
+      type Query {
+          foo(id: String) : Foo
+      }
+      type Foo {
+        id: String
+        name: String
+        icon: Icon
+        children: FooCollection
+      }
+      type FooCollection {
+        nodes: [Foo]
+      }
+      type Icon {
+        path: String
+      }
+    queryFields:
+      - foo:foodump
+    typeAliases:
+      Foo: FooData
+      FooCollection: FooDataCollection
+    expected:
+      query: |
+        query Bulk_Foo($id100: String, $id101: String, $id102: String) {
+            foo100: foo(id: $id100) {
+              name
+              icon {
+                path
+              }
+            }
+            foo101: foo(id: $id101) {
+              name
+              icon {
+                path
+              }
+            }
+            foo102: foo(id: $id102) {
+              name
+              icon {
+                path
+              }
+            }
+        }
+      variables:
+        id100: fooid1
+        id101: fooid2
+        id102: fooid3
+    response:
+      data:
+        foo100:
+          name: FooId1
+          icon:
+            path: /fooid1
+        foo101:
+          name: FooId2
+          icon:
+            path: /fooid2
+        foo102:
+          name: FooId3
+          icon:
+            path: /fooid3
+      errors: []

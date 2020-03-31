@@ -1,0 +1,161 @@
+request:
+  query: |
+
+    query PageOfPageTree($contentId: String!) {
+        fooobject (id: $contentId) {
+            id
+            name
+            icon {
+              path
+            }
+            ... on FooConflict {
+              children {
+                 nodes {
+                   id name icon {
+                      path
+                   }
+                 }
+              }
+            }
+        }
+    }
+  variables:
+    contentId: fooid1
+
+response:
+  errors: []
+  data:
+    fooobject:
+      id: fooid1
+      name: FooId1
+      icon:
+        path: /fooid1
+      children:
+        nodes:
+          - id: fooid2
+            name: FooId2
+            icon:
+              path: /fooid2
+          - id: fooid3
+            name: FooId3
+            icon:
+              path: /fooid3
+
+schemaSources:
+  - namespace: fooid
+    schema: |
+      schema {
+          query: MyQuery
+      }
+      type MyQuery {
+          foo(id: String) : Foo
+      }
+      type Foo {
+          id: String
+          children: FooCollection
+      }
+
+      type FooCollection {
+          nodes: [Foo]
+      }
+    extensions:
+    - type: Foo
+      field: id
+      by:
+        namespace: foo
+        type: Foo
+        query: foo
+        arg: id
+    typeAliases:
+      Foo: FooConflict
+      FooCollection: FooConflictCollection
+    queryFields:
+      foo: fooobject
+    expected:
+      query: |
+        query Bulk_Foo($contentId100: String!) {
+          fooobject100: foo(id: $contentId100) {
+            id
+            ... on Foo {
+              children {
+                nodes {
+                  id
+                }
+              }
+            }
+          }
+        }
+      variables:
+        contentId100: fooid1
+    response:
+      data:
+        fooobject100:
+          id: fooid1
+          children:
+            nodes:
+              - id: fooid2
+              - id: fooid3
+      errors: []
+  - namespace: foo
+    schema: |
+      schema {
+          query: Query
+      }
+      type Query {
+          foo(id: String) : Foo
+      }
+      type Foo {
+        id: String
+        name: String
+        icon: Icon
+        children: FooCollection
+      }
+      type FooCollection {
+        nodes: [Foo]
+      }
+      type Icon {
+        path: String
+      }
+    queryFields:
+      - foo:foodump
+    expected:
+      query: |
+        query Bulk_FooConflict($id100: String, $id101: String, $id102: String) {
+            fooobject100: foo(id: $id100) {
+              name
+              icon {
+                path
+              }
+            }
+            fooobject101: foo(id: $id101) {
+              name
+              icon {
+                path
+              }
+            }
+            fooobject102: foo(id: $id102) {
+              name
+              icon {
+                path
+              }
+            }
+        }
+      variables:
+        id100: fooid1
+        id101: fooid2
+        id102: fooid3
+    response:
+      data:
+        fooobject100:
+          name: FooId1
+          icon:
+            path: /fooid1
+        fooobject101:
+          name: FooId2
+          icon:
+            path: /fooid2
+        fooobject102:
+          name: FooId3
+          icon:
+            path: /fooid3
+      errors: []

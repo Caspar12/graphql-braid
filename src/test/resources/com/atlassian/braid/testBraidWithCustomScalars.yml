@@ -1,0 +1,87 @@
+request:
+  query: |
+    query($fooId: String!, $barId: String!) {
+      foo(id: $fooId) {
+        id
+        name
+      }
+      bar(id: $barId) {
+        id
+        name
+      }
+    }
+  variables:
+    fooId: fooid
+    barId: barid
+
+response:
+  errors: []
+  data:
+    foo:
+      id: fooid
+      name: VAL1
+    bar:
+      id: barid
+      name: VAL2
+
+schemaSources:
+  - namespace: foo
+    schema: |
+      schema {
+        query: Query
+      }
+
+      type Query {
+        foo(id: String!) : FooResult!
+      }
+
+      type FooResult {
+        id : MyID!
+        name : String!
+      }
+
+      scalar MyID
+    expected:
+      query: |
+        query Bulk_FooResult($fooId100: String!) {
+          foo100: foo(id: $fooId100) {
+            id
+            name
+          }
+        }
+      variables:
+        fooId100: fooid
+    response:
+      data:
+        foo100:
+          id: fooid
+          name: VAL1
+      errors: []
+  - namespace: bar
+    schema: |
+      schema {
+        query: Query
+      }
+      type Query {
+        bar(id: String!) : BarResult!
+      }
+      type BarResult {
+        id : MyID!
+        name : String!
+      }
+    expected:
+      query: |
+        query Bulk_BarResult($barId100: String!) {
+          bar100: bar(id: $barId100) {
+            id
+            name
+          }
+        }
+      variables:
+        barId100: barid
+    response:
+      data:
+        bar100:
+          id: barid
+          name: VAL2
+      errors: []

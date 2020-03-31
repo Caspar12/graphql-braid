@@ -1,0 +1,103 @@
+request:
+  query: |
+    query($id: String!) {
+      foo(id: $id) { 
+        ...namedFrag
+        bar {
+          key
+          title
+        }
+      }
+    }
+    fragment namedFrag on Foo2 {
+      id
+      name
+    }
+  variables:
+    id: fooid
+
+response:
+  errors: []
+  data:
+    foo:
+      id: fooid
+      name: Something
+      bar:
+        key: aBarKey
+        title: barTitle
+
+schemaSources:
+  - namespace: foo
+    schema: |
+      schema {
+        query: Query
+      }
+      type Query {
+        foo(id: String) : Foo
+      }
+      type Foo {
+        id: String
+        name: String
+        barkey: String
+      }
+    typeAliases:
+      Foo: Foo2
+    links:
+      - from:
+          type: Foo2
+          field: bar
+          fromField: barkey
+        to:
+          namespace: bar
+          type: Bar
+          field: bar
+          argument: key
+    expected:
+      query: |
+        query Bulk_Foo($id100: String!) {
+          foo100: foo(id: $id100) {
+            ...namedFrag
+            barkey
+          }
+        }
+        fragment namedFrag on Foo {
+          id
+          name
+        }
+      variables:
+        id100: fooid
+    response:
+      data:
+        foo100:
+          id: fooid
+          name: Something
+          barkey: aBarKey
+      errors: []
+  - namespace: bar
+    schema: |
+      schema {
+        query: Query
+      }
+      type Query {
+        bar(key: String!) : Bar
+      }
+      type Bar {
+        key: String
+        title: String
+      }
+    expected:
+      query: |
+        query Bulk_Bar($key100: String!) {
+          bar100: bar(key: $key100) {
+            key
+            title
+          }
+        }
+      variables:
+        key100: aBarKey
+    response:
+      data:
+        bar100:
+          key: aBarKey
+          title: barTitle
+      errors: []

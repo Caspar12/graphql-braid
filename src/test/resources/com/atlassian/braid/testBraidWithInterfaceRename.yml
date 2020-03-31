@@ -1,0 +1,69 @@
+request:
+  query: |
+    query {
+      foo {
+        id
+      }
+    }
+
+response:
+  errors: []
+  data:
+    foo:
+      id: fooid
+
+schemaSources:
+  - namespace: foo
+    schema: |
+      schema {
+        query: Query
+      }
+      type Query {
+        foo : Foo
+      }
+      type Foo {
+        id: String
+      }
+    expected:
+      query: |
+        query Bulk_Foo {
+            foo100: foo {
+              id
+            }
+        }
+    response:
+      data:
+        foo100:
+          id: fooid
+      errors: []
+  - namespace: bar
+    schema: |
+      schema {
+        query: Query
+      }
+      type Query {
+        bar : Bar
+      }
+      type Bar implements Foo {
+        id: String
+      }
+      interface Foo {
+        id: String
+      }
+    typeAliases:
+      # TypeResolver defined in YamlBraidExecutionRule.java
+      Foo: Fooable
+      query: |
+        query Bulk_Bar {
+            bar100: bar {
+              id
+            }
+        }
+    response:
+      data:
+        bar100:
+          id: barid
+      errors: []
+
+
+

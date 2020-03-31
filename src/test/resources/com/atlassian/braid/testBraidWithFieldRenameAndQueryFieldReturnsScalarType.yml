@@ -1,0 +1,40 @@
+request:
+  query: |
+    query {
+     foo2
+    }
+response:
+  errors: []
+  data:
+    foo2: someValue
+
+schemaSources:
+  - namespace: foo
+    schema: |
+      schema {
+        query: Query
+      }
+      type Query {
+        foo(id: String) : Foo
+        foo2: String
+      }
+      type Foo {
+        id: String
+        newname: String
+      }
+    mapper:
+    - type: Foo
+      operations:
+      - key: name
+        op: copy
+        target: newname
+      - id: copy
+    expected:
+      query: |
+        query Bulk_String {
+            foo2100: foo2
+        }
+    response:
+      data:
+        foo2100: "someValue"
+      errors: []
